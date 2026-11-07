@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>영화 티어리스트 (Movie Tier List)</title>
+    <style>
+        :root {
+            --bg-color: #121214;
+            --card-bg: #1e1e24;
+            --text-color: #f0f0f4;
+            --border-color: #2a2a35;
+            --unclassified-bg: #18181c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 12px 16px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            background-color: #2d2d38;
+            color: #fff;
+            border: 1px solid #3f3f50;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #3b3b4a;
+            border-color: #55556a;
+        }
+
+        button.btn-danger {
+            background-color: #3e1b1b;
+            border-color: #682727;
+            color: #ff8a8a;
+        }
+
+        button.btn-danger:hover {
+            background-color: #572222;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            gap: 10px;
+            overflow: hidden;
+        }
+
+        .tier-list-container {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding-right: 4px;
+        }
+
+        /* Scrollbar styling */
+        .tier-list-container::-webkit-scrollbar,
+        .movie-pool::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .tier-list-container::-webkit-scrollbar-thumb,
+        .movie-pool::-webkit-scrollbar-thumb {
+            background: #333340;
+            border-radius: 3px;
+        }
+
+        .tier-row {
+            display: flex;
+            min-height: 80px;
+            background-color: #1a1a20;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .tier-header {
+            width: 90px;
+            min-width: 90px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: #000;
+            position: relative;
+            padding: 4px;
+            text-align: center;
+            word-break: break-word;
+        }
+
+        .tier-controls {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            display: none;
+            gap: 2px;
+        }
+
+        .tier-header:hover .tier-controls {
+            display: flex;
+        }
+
+        .btn-icon {
+            background: rgba(0,0,0,0.3);
+            border: none;
+            color: #fff;
+            width: 18px;
+            height: 18px;
+            border-radius: 3px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            cursor: pointer;
+        }
+        .btn-icon:hover {
+            background: rgba(0,0,0,0.6);
+        }
+
+        .tier-content {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 8px;
+            padding: 8px;
+            min-height: 80px;
+            transition: background-color 0.2s;
+        }
+
+        .tier-content.drag-over {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Unclassified Section */
+        .unclassified-section {
+            height: 125px;
+            min-height: 125px;
+            background-color: var(--unclassified-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            padding: 8px 12px;
+            flex-shrink: 0;
+        }
+
+        .unclassified-title {
+            font-size: 0.85rem;
+            color: #8a8a9e;
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .movie-pool {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            align-items: center;
+            padding-bottom: 4px;
+        }
+
+        /* Movie Cards */
+        .movie-card {
+            width: 75px;
+            height: 105px;
+            min-width: 75px;
+            border-radius: 6px;
+            cursor: grab;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 8px 6px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+
+        .movie-card:active {
+            cursor: grabbing;
+        }
+
+        .movie-card:hover {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.6);
+            z-index: 10;
+        }
+
+        .movie-card.dragging {
+            opacity: 0.4;
+        }
+
+        .card-bg-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.25;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .card-title-main {
+            font-size: 0.85rem;
+            font-weight: 900;
+            line-height: 1.15;
+            z-index: 2;
+            word-break: keep-all;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .card-tag {
+            font-size: 0.65rem;
+            font-weight: 700;
+            opacity: 0.85;
+            z-index: 2;
+            letter-spacing: 0.5px;
+        }
+
+        /* Hover Tooltip Overlay */
+        .card-tooltip {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 14, 0.92);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 6px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+            z-index: 5;
+            backdrop-filter: blur(2px);
+        }
+
+        .movie-card:hover .card-tooltip {
+            opacity: 1;
+        }
+
+        .tooltip-title {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 4px;
+            word-break: keep-all;
+        }
+
+        .tooltip-info {
+            font-size: 0.65rem;
+            color: #b0b0c0;
+            line-height: 1.3;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            background: #22222c;
+            border: 1px solid #383848;
+            border-radius: 10px;
+            padding: 20px;
+            width: 300px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .modal-title {
+            font-size: 1rem;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .modal-select-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+        }
+
+        .modal-select-item {
+            padding: 10px;
+            background: #2c2c38;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-select-item:hover {
+            background: #3a3a4a;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🎬 영화 티어리스트 (Movie Tier List)</h1>
+        <div class="header-actions">
+            <button onclick="addTier()">+ 등급 추가</button>
+            <button class="btn-danger" onclick="confirmReset()">초기화</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="tier-list-container" id="tierList">
+            <!-- Tier rows injected via JS -->
+        </div>
+
+        <div class="unclassified-section">
+            <div class="unclassified-title">
+                <span>미분류 영화 목록</span>
+                <span id="unclassifiedCount">0/8</span>
+            </div>
+            <div class="movie-pool tier-content" data-tier-id="unclassified" id="unclassifiedPool">
+                <!-- Movie cards injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Click-to-Move -->
+    <div class="modal-overlay" id="moveModal">
+        <div class="modal-box">
+            <div class="modal-title" id="modalMovieTitle">영화 이동</div>
+            <div class="modal-select-list" id="modalTierList">
+                <!-- Tier options injected via JS -->
+            </div>
+            <button style="width: 100%;" onclick="closeModal()">취소</button>
+        </div>
+    </div>
+
+    <script>
+                const MOVIES = [
+            { id: "m1", title: "기생충", year: "2019", director: "봉준호", bg: "linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)", font: "'Trebuchet MS', 'Arial Black', sans-serif", textColor: "#ffffff", tag: "PARASITE" },
+            { id: "m2", title: "인터스텔라", year: "2014", director: "크리스토퍼 놀란", bg: "linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)", font: "'Trebuchet MS', 'Arial Black', sans-serif", textColor: "#e0e6ed", tag: "INTERSTELLAR" },
+            { id: "m3", title: "라라랜드", year: "2016", director: "데이미언 셔젤", bg: "linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%)", font: "'Trebuchet MS', 'Arial Black', sans-serif", textColor: "#ffffff", tag: "LA LA LAND" },
+            { id: "m4", title: "센과 치히로의 행방불명", year: "2001", director: "미야자키 하야오", bg: "linear-gradient(135deg, #134e5e 0%, #71b280 100%)", font: "'Trebuchet MS', 'Arial Black', sans-serif", textColor: "#ffffff", tag: "SPIRITED AWAY" },
+            { id: "m5", title: "어벤져스: 엔드게임", year: "2019", director: "안소니 루소, 조 루소", bg: "linear-gradient(135deg, #311042 0%, #7f00ff 50%, #e100ff 100%)", font: "'Trebuchet MS', 'Arial Black', sans-serif", textColor: "#ffea00", tag: "ENDGAME" },
+            { id: "m6", title: "범죄도시", year: "2017", director: "강윤성", bg: "linear-gradient(135deg, #232526 0%, #414345 100%)", font: "'Trebuchet MS', 'Arial Black', sans-serif", textColor: "#ff3b30", tag: "THE OUTLAWS" },
+            { id: "m7", title: "타이타닉", year: "2000", director: "제임스 카메론", bg: "linear-gradient(135deg, #000428 0%, #004e92 100%)", font: "'Trebuchet MS', 'Arial Black', sans-serif", textColor: "#d4af37", tag: "TITANIC" },
+            { id: "m8", title: "토이 스토리", year: "1995", director: "존 라세터", bg: "linear-gradient(135deg, #f12711 0%, #f5af19 100%)", font: "'Trebuchet MS', 'Arial Black', sans-serif", textColor: "#ffffff", tag: "TOY STORY" }
+        ];
+
+        const DEFAULT_TIERS = [
+            { id: "t-S", name: "S", color: "#ff7f7f" },
+            { id: "t-A", name: "A", color: "#ffbf7f" },
+            { id: "t-B", name: "B", color: "#ffff7f" },
+            { id: "t-C", name: "C", color: "#7fff7f" },
+            { id: "t-D", name: "D", color: "#7fbfff" }
+        ];
+
+        const TIER_COLORS = ["#ff7f7f", "#ffbf7f", "#ffff7f", "#7fff7f", "#7fbfff", "#da7fff", "#ff7fda", "#bfbfbf"];
+
+        let state = {
+            tiers: [],
+            // map tierId -> array of movieIds
+            placements: {}
+        };
+
+        let selectedMovieIdForMove = null;
+        let draggedMovieId = null;
+
+        function init() {
+            const saved = localStorage.getItem("movie_tierlist_state");
+            if (saved) {
+                try {
+                    state = JSON.parse(saved);
+                } catch (e) {
+                    resetToDefaultState();
+                }
+            } else {
+                resetToDefaultState();
+            }
+            render();
+        }
+
+        function resetToDefaultState() {
+            state.tiers = JSON.parse(JSON.stringify(DEFAULT_TIERS));
+            state.placements = {
+                "unclassified": MOVIES.map(m => m.id)
+            };
+            state.tiers.forEach(t => {
+                state.placements[t.id] = [];
+            });
+        }
+
+        function saveState() {
+            localStorage.setItem("movie_tierlist_state", JSON.stringify(state));
+        }
+
+        function confirmReset() {
+            if (confirm("정말 초기화하시겠습니까? 모든 등급과 영화 배치가 처음 상태로 돌아갑니다.")) {
+                resetToDefaultState();
+                saveState();
+                render();
+            }
+        }
+
+        function addTier() {
+            const newId = "t-" + Date.now();
+            const colorIdx = state.tiers.length % TIER_COLORS.length;
+            const name = String.fromCharCode(69 + Math.max(0, state.tiers.length - 5)); // E, F, G...
+            state.tiers.push({
+                id: newId,
+                name: name || "NEW",
+                color: TIER_COLORS[colorIdx]
+            });
+            state.placements[newId] = [];
+            saveState();
+            render();
+        }
+
+        function editTierName(tierId) {
+            const tier = state.tiers.find(t => t.id === tierId);
+            if (!tier) return;
+            const newName = prompt("등급 이름을 입력하세요:", tier.name);
+            if (newName !== null && newName.trim() !== "") {
+                tier.name = newName.trim();
+                saveState();
+                render();
+            }
+        }
+
+        function deleteTier(tierId) {
+            if (!confirm("이 등급을 삭제하시겠습니까? 안의 영화는 미분류로 이동합니다.")) return;
+            
+            // Move movies in this tier to unclassified
+            const moviesInTier = state.placements[tierId] || [];
+            state.placements["unclassified"] = [...state.placements["unclassified"], ...moviesInTier];
+            
+            delete state.placements[tierId];
+            state.tiers = state.tiers.filter(t => t.id !== tierId);
+            
+            saveState();
+            render();
+        }
+
+        function render() {
+            const tierListEl = document.getElementById("tierList");
+            tierListEl.innerHTML = "";
+
+            // Render Tier Rows
+            state.tiers.forEach(tier => {
+                const row = document.createElement("div");
+                row.className = "tier-row";
+
+                const header = document.createElement("div");
+                header.className = "tier-header";
+                header.style.backgroundColor = tier.color;
+                header.innerText = tier.name;
+
+                const controls = document.createElement("div");
+                controls.className = "tier-controls";
+
+                const editBtn = document.createElement("button");
+                editBtn.className = "btn-icon";
+                editBtn.innerText = "✏️";
+                editBtn.title = "이름 변경";
+                editBtn.onclick = (e) => { e.stopPropagation(); editTierName(tier.id); };
+
+                const delBtn = document.createElement("button");
+                delBtn.className = "btn-icon";
+                delBtn.innerText = "🗑️";
+                delBtn.title = "등급 삭제";
+                delBtn.onclick = (e) => { e.stopPropagation(); deleteTier(tier.id); };
+
+                controls.appendChild(editBtn);
+                controls.appendChild(delBtn);
+                header.appendChild(controls);
+
+                const content = document.createElement("div");
+                content.className = "tier-content";
+                content.dataset.tierId = tier.id;
+
+                // Add drag drop events
+                setupDropTarget(content);
+
+                // Append movie cards
+                const movieIds = state.placements[tier.id] || [];
+                movieIds.forEach(mId => {
+                    const movie = MOVIES.find(m => m.id === mId);
+                    if (movie) {
+                        content.appendChild(createMovieCard(movie, tier.id));
+                    }
+                });
+
+                row.appendChild(header);
+                row.appendChild(content);
+                tierListEl.appendChild(row);
+            });
+
+            // Render Unclassified Pool
+            const unclassifiedPool = document.getElementById("unclassifiedPool");
+            unclassifiedPool.innerHTML = "";
+            setupDropTarget(unclassifiedPool);
+
+            const unclassifiedIds = state.placements["unclassified"] || [];
+            document.getElementById("unclassifiedCount").innerText = `${unclassifiedIds.length}/8`;
+
+            unclassifiedIds.forEach(mId => {
+                const movie = MOVIES.find(m => m.id === mId);
+                if (movie) {
+                    unclassifiedPool.appendChild(createMovieCard(movie, "unclassified"));
+                }
+            });
+        }
+
+        function createMovieCard(movie, currentTierId) {
+            const card = document.createElement("div");
+            card.className = "movie-card";
+            card.draggable = true;
+            card.dataset.movieId = movie.id;
+            card.dataset.tierId = currentTierId;
+
+            card.style.background = movie.bg;
+            card.style.color = movie.textColor;
+            card.style.fontFamily = movie.font;
+
+            card.innerHTML = `
+                <div class="card-bg-pattern"></div>
+                <div class="card-tag">${movie.tag}</div>
+                <div class="card-title-main">${movie.title}</div>
+                <div class="card-tooltip">
+                    <div class="tooltip-title">${movie.title}</div>
+                    <div class="tooltip-info">
+                        개봉: ${movie.year}년<br>
+                        감독: ${movie.director}
+                    </div>
+                </div>
+            `;
+
+            // Drag Events
+            card.addEventListener("dragstart", (e) => {
+                draggedMovieId = movie.id;
+                card.classList.add("dragging");
+                e.dataTransfer.setData("text/plain", movie.id);
+            });
+
+            card.addEventListener("dragend", () => {
+                card.classList.remove("dragging");
+                draggedMovieId = null;
+            });
+
+            // Click to move event
+            card.addEventListener("click", () => {
+                openMoveModal(movie.id);
+            });
+
+            return card;
+        }
+
+        function setupDropTarget(element) {
+            element.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                element.classList.add("drag-over");
+            });
+
+            element.addEventListener("dragleave", () => {
+                element.classList.remove("drag-over");
+            });
+
+            element.addEventListener("drop", (e) => {
+                e.preventDefault();
+                element.classList.remove("drag-over");
+
+                const targetTierId = element.dataset.tierId;
+                if (!draggedMovieId || !targetTierId) return;
+
+                // Move logic
+                moveMovieToTier(draggedMovieId, targetTierId, e.clientX, element);
+            });
+        }
+
+        function moveMovieToTier(movieId, targetTierId, dropX, containerEl) {
+            // Remove from current tier
+            for (let tId in state.placements) {
+                state.placements[tId] = state.placements[tId].filter(id => id !== movieId);
+            }
+
+            // Determine order insertion
+            const targetList = state.placements[targetTierId] || [];
+            
+            // Re-order based on drop position relative to existing cards
+            const cards = Array.from(containerEl.querySelectorAll('.movie-card:not(.dragging)'));
+            let insertIndex = targetList.length;
+
+            for (let i = 0; i < cards.length; i++) {
+                const rect = cards[i].getBoundingClientRect();
+                const cardMidX = rect.left + rect.width / 2;
+                if (dropX < cardMidX) {
+                    insertIndex = i;
+                    break;
+                }
+            }
+
+            targetList.splice(insertIndex, 0, movieId);
+            state.placements[targetTierId] = targetList;
+
+            saveState();
+            render();
+        }
+
+        // Click-to-Move Modal
+        function openMoveModal(movieId) {
+            selectedMovieIdForMove = movieId;
+            const movie = MOVIES.find(m => m.id === movieId);
+            document.getElementById("modalMovieTitle").innerText = `'${movie.title}' 등급 이동`;
+            
+            const modalTierList = document.getElementById("modalTierList");
+            modalTierList.innerHTML = "";
+
+            // Add Tiers
+            state.tiers.forEach(t => {
+                const item = document.createElement("div");
+                item.className = "modal-select-item";
+                item.innerHTML = `<span>${t.name} 등급</span> <span style="width:12px;height:12px;border-radius:50%;background:${t.color}"></span>`;
+                item.onclick = () => {
+                    moveMovieDirectly(movieId, t.id);
+                    closeModal();
+                };
+                modalTierList.appendChild(item);
+            });
+
+            // Add Unclassified
+            const unclassifiedItem = document.createElement("div");
+            unclassifiedItem.className = "modal-select-item";
+            unclassifiedItem.innerText = "미분류";
+            unclassifiedItem.onclick = () => {
+                moveMovieDirectly(movieId, "unclassified");
+                closeModal();
+            };
+            modalTierList.appendChild(unclassifiedItem);
+
+            document.getElementById("moveModal").classList.add("active");
+        }
+
+        function closeModal() {
+            document.getElementById("moveModal").classList.remove("active");
+            selectedMovieIdForMove = null;
+        }
+
+        function moveMovieDirectly(movieId, targetTierId) {
+            for (let tId in state.placements) {
+                state.placements[tId] = state.placements[tId].filter(id => id !== movieId);
+            }
+            if (!state.placements[targetTierId]) {
+                state.placements[targetTierId] = [];
+            }
+            state.placements[targetTierId].push(movieId);
+            saveState();
+            render();
+        }
+
+        // Run on page load
+        init();
+    </script>
+</body>
+</html>
